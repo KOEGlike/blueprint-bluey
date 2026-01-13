@@ -442,7 +442,9 @@ async function resolveTicket(
 
 // Listen for messages in the help channel to create tickets
 app.event("message", async ({ event, client, logger }) => {
-  if (event.subtype) return; // Skip edited messages, etc.
+  console.log("subtype: ", event.subtype)
+
+  if (event.subtype !== 'file_share' && event.subtype!=undefined ) return; // Skip edited messages, etc.
   // Only process new messages in the help channel (not thread replies)
   if (event.channel !== HELP_CHANNEL || event.thread_ts) {
     return;
