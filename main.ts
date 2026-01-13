@@ -446,6 +446,10 @@ app.event("message", async ({ event, client, logger }) => {
     if (event.channel !== HELP_CHANNEL || event.thread_ts) {
         return;
     };
+    // Ignore specific user
+    if (event.user === 'U08AA6HA82F') {
+      return;
+  }
 
 
     const message = event as {
