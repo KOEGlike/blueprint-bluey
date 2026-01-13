@@ -1,5 +1,6 @@
 // test- ignore me
 import { App, LogLevel } from "@slack/bolt";
+import { Logger, WebClient } from "@slack/web-api";
 import * as dotenv from "dotenv";
 import * as fs from "fs-extra";
 import * as path from "path";
@@ -10,8 +11,8 @@ const detailsData = fs.readFileSync("lib/details.md").toString(); // Added detai
 const HELP_CHANNEL = process.env.HELP_CHANNEL!;
 const TICKETS_CHANNEL = process.env.TICKETS_CHANNEL!;
 const DATA_FILE_PATH = path.join(
-    process.env.DATA_DIR || __dirname,
-    "ticket-data.json"
+  process.env.DATA_DIR || __dirname,
+  "ticket-data.json"
 );
 const AI_ENDPOINT = process.env.AI_ENDPOINT || "error: AI_ENDPOINT not set";
 
@@ -107,92 +108,92 @@ function formatTs(ts: string): string {
 }
 
 function createTicketBlocks(
-    AIQuickResponse: string,
-    originalMessageChannelID: string,
-    originalMessageTs: string,
-    claimText?: string,
-    showAIResponse: boolean = false
+  AIQuickResponse: string,
+  originalMessageChannelID: string,
+  originalMessageTs: string,
+  claimText?: string,
+  showAIResponse: boolean = false
 ): any[] {
-    const headerText = claimText ? claimText : "Not Claimed";
+  const headerText = claimText ? claimText : "Not Claimed";
 
-    // Start with the header section
-    const blocks = [
-        {
-            type: "section",
-            text: {
-                type: "mrkdwn",
-                text: "*" + headerText + "*",
-                // emoji: true
-            },
-        },
-    ];
+  // Start with the header section
+  const blocks = [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: "*" + headerText + "*",
+        // emoji: true
+      },
+    },
+  ];
 
-    if (showAIResponse) {
-        blocks.push({
-            type: "section",
-            text: {
-                type: "mrkdwn",
-                text: `*Quick response:* ${AIQuickResponse}`,
-            },
-        });
-    }
-
-    // Add action buttons
+  if (showAIResponse) {
     blocks.push({
-        type: "actions",
-        //@ts-ignore
-        elements: [
-            {
-                type: "button",
-                style: "primary",
-                text: {
-                    type: "plain_text",
-                    text: "Mark Resolved",
-                    emoji: true,
-                },
-                value: "claim_button",
-                action_id: "mark_resolved",
-            },
-            {
-                type: "button",
-                style: "danger",
-                text: {
-                    type: "plain_text",
-                    text: "Seen, Not Sure",
-                    emoji: true,
-                },
-                value: "not_sure_button",
-                action_id: "not_sure",
-            },
-            {
-                type: "users_select",
-                placeholder: {
-                    type: "plain_text",
-                    text: "Assign (will DM assignee)",
-                    emoji: true,
-                },
-                action_id: "assign_user",
-            },
-        ],
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `*Quick response:* ${AIQuickResponse}`,
+      },
     });
+  }
 
-    // Add thread link
-    blocks.push({
-        type: "section",
+  // Add action buttons
+  blocks.push({
+    type: "actions",
+    //@ts-ignore
+    elements: [
+      {
+        type: "button",
+        style: "primary",
         text: {
-            type: "mrkdwn",
-            text: `<https://${process.env.SLACK_WORKSPACE_DOMAIN || "yourworkspace.slack.com"
-                }.slack.com/archives/${originalMessageChannelID}/p${formatTs(
-                    originalMessageTs
-                )}|View Thread>`,
+          type: "plain_text",
+          text: "Mark Resolved",
+          emoji: true,
         },
-    });
+        value: "claim_button",
+        action_id: "mark_resolved",
+      },
+      {
+        type: "button",
+        style: "danger",
+        text: {
+          type: "plain_text",
+          text: "Seen, Not Sure",
+          emoji: true,
+        },
+        value: "not_sure_button",
+        action_id: "not_sure",
+      },
+      {
+        type: "users_select",
+        placeholder: {
+          type: "plain_text",
+          text: "Assign (will DM assignee)",
+          emoji: true,
+        },
+        action_id: "assign_user",
+      },
+    ],
+  });
 
-    return blocks;
+  // Add thread link
+  blocks.push({
+    type: "section",
+    text: {
+      type: "mrkdwn",
+      text: `<https://${process.env.SLACK_WORKSPACE_DOMAIN || "yourworkspace.slack.com"
+        }.slack.com/archives/${originalMessageChannelID}/p${formatTs(
+          originalMessageTs
+        )}|View Thread>`,
+    },
+  });
+
+  return blocks;
 }
 
 // Function to refresh the list of ticket channel members
-async function refreshTicketChannelMembers(client) {
+async function refreshTicketChannelMembers(client: WebClient) {
   try {
     const result = await client.conversations.members({
       channel: TICKETS_CHANNEL,
@@ -228,23 +229,23 @@ function getTicketByTicketTs(ticketTs: string): TicketInfo | null {
 // Function to create a ticket
 async function createTicket(
   message: { text: string; ts: string; channel: string; user: string },
-  client,
-  logger
+  client: WebClient,
+  logger: Logger
 ) {
   try {
     let aiResponse;
     try {
       aiResponse = await fetchAIResponse(
         "/no_think\n" +
-          "Blueprint is Hack Club's hardware YSWS program. " +
-          "YSWS (You ship, We ship) are programs that require you to ship a cool thing to get a cool thing.\n" +
-          `More details about Blueprint:\n ${detailsData}\n` +
-          `Use the following FAQ to help you!:\n ${faqData}\n` +
-          "If you do not know the answer to a response, do not make it up. False responses confuse users and cause problems in the future. " +
-          "Please make the potential response really friendly while not being cheesy. " +
-          "Please have a normal reply tone, for example, if the user asks what is 1+2, you would reply 1+2 is 3. Another example, If the user asks how many projects they can make, you would reply as many as you'd like." +
-          "RESPOND IN PLAINTEXT AND PLAINTEXT ONLY. Here is the question:" +
-          message.text
+        "Blueprint is Hack Club's hardware YSWS program. " +
+        "YSWS (You ship, We ship) are programs that require you to ship a cool thing to get a cool thing.\n" +
+        `More details about Blueprint:\n ${detailsData}\n` +
+        `Use the following FAQ to help you!:\n ${faqData}\n` +
+        "If you do not know the answer to a response, do not make it up. False responses confuse users and cause problems in the future. " +
+        "Please make the potential response really friendly while not being cheesy. " +
+        "Please have a normal reply tone, for example, if the user asks what is 1+2, you would reply 1+2 is 3. Another example, If the user asks how many projects they can make, you would reply as many as you'd like." +
+        "RESPOND IN PLAINTEXT AND PLAINTEXT ONLY. Here is the question:" +
+        message.text
       );
     } catch (parseError) {
       console.error("Failed to parse AI response:", parseError);
@@ -289,8 +290,8 @@ async function createTicket(
 // Function to update a ticket message with new information
 async function updateTicketMessage(
   ticket: TicketInfo,
-  client,
-  logger,
+  client: WebClient,
+  logger: Logger,
   showAIResponse: boolean = false
 ) {
   if (!ticket) return false;
@@ -334,7 +335,7 @@ async function updateTicketMessage(
 }
 
 // Function to claim a ticket
-async function claimTicket(userId: string, ticketTs: string, client, logger) {
+async function claimTicket(userId: string, ticketTs: string, client: WebClient, logger: Logger) {
   const ticket = getTicketByTicketTs(ticketTs);
   if (!ticket) return false;
 
@@ -350,8 +351,8 @@ async function claimTicket(userId: string, ticketTs: string, client, logger) {
 async function markTicketAsNotSure(
   userId: string,
   ticketTs: string,
-  client,
-  logger
+  client: WebClient,
+  logger: Logger
 ) {
   const ticket = getTicketByTicketTs(ticketTs);
   if (!ticket) return false;
@@ -367,8 +368,8 @@ async function markTicketAsNotSure(
 async function resolveTicket(
   ticketTs: string,
   resolver: string,
-  client,
-  logger
+  client: WebClient,
+  logger: Logger
 ) {
   try {
     const ticket = getTicketByTicketTs(ticketTs);
@@ -441,30 +442,30 @@ async function resolveTicket(
 
 // Listen for messages in the help channel to create tickets
 app.event("message", async ({ event, client, logger }) => {
-    if (event.subtype) return; // Skip edited messages, etc.
-    // Only process new messages in the help channel (not thread replies)
-    if (event.channel !== HELP_CHANNEL || event.thread_ts) {
-        return;
-    };
-    // Ignore specific user
-    if (event.user === 'U08AA6HA82F') {
-      return;
+  if (event.subtype) return; // Skip edited messages, etc.
+  // Only process new messages in the help channel (not thread replies)
+  if (event.channel !== HELP_CHANNEL || event.thread_ts) {
+    return;
+  };
+  // Ignore specific user
+  if (event.user === 'U08AA6HA82F') {
+    return;
   }
 
 
-    const message = event as {
-        text: string;
-        ts: string;
-        channel: string;
-        user: string;
-    };
-    await createTicket(message, client, logger);
-    // send welcome message
-    let thread_message = await client.chat.postMessage({
-        channel: event.channel,
-        thread_ts: event.ts,
-        text: `:hii: Thank you for creating a ticket someone will help you soon. make sure to read the <https://hackclub.slack.com/docs/T0266FRGM/F09HZ9MVD39|Faq> and the <https://blueprint.hackclub.com/faq|Site Faq>!`,
-    });
+  const message = event as {
+    text: string;
+    ts: string;
+    channel: string;
+    user: string;
+  };
+  await createTicket(message, client, logger);
+  // send welcome message
+  let thread_message = await client.chat.postMessage({
+    channel: event.channel,
+    thread_ts: event.ts,
+    text: `:hii: Thank you for creating a ticket someone will help you soon. make sure to read the <https://hackclub.slack.com/docs/T0266FRGM/F09HZ9MVD39|Faq> and the <https://blueprint.hackclub.com/faq|Site Faq>!`,
+  });
 
 
 });
@@ -579,11 +580,10 @@ app.action("assign_user", async ({ body, ack, client, logger }) => {
     // DM the assigned user
     await client.chat.postMessage({
       channel: selectedUser,
-      text: `You have been assigned a ticket from <#${TICKETS_CHANNEL}>. Please check it out & claim it by replying.\n<https://${
-        process.env.SLACK_WORKSPACE_DOMAIN || "yourworkspace.slack.com"
-      }.slack.com/archives/${TICKETS_CHANNEL}/p${formatTs(
-        ticket.ticketMessageTs
-      )}|View Ticket>`,
+      text: `You have been assigned a ticket from <#${TICKETS_CHANNEL}>. Please check it out & claim it by replying.\n<https://${process.env.SLACK_WORKSPACE_DOMAIN || "yourworkspace.slack.com"
+        }.slack.com/archives/${TICKETS_CHANNEL}/p${formatTs(
+          ticket.ticketMessageTs
+        )}|View Ticket>`,
     });
 
     logger.info(`User ${selectedUser} was assigned ticket ${ticketTs}`);
@@ -640,73 +640,73 @@ app.action("hide_ai_response", async ({ body, ack, client, logger }) => {
 
 // Listen for reaction added events to resolve tickets
 app.event("reaction_added", async ({ event, client, logger }) => {
-    const reactionEvent = event;
-    logger.info("Reaction added event received:", reactionEvent);
-    // Skip if user is not a member of the tickets channel
-    if (!isTicketChannelMember(reactionEvent.user)) {
-        logger.info(
-            `User ${reactionEvent.user} tried to resolve a ticket via reaction but is not in the tickets channel`
+  const reactionEvent = event;
+  logger.info("Reaction added event received:", reactionEvent);
+  // Skip if user is not a member of the tickets channel
+  if (!isTicketChannelMember(reactionEvent.user)) {
+    logger.info(
+      `User ${reactionEvent.user} tried to resolve a ticket via reaction but is not in the tickets channel`
+    );
+    return;
+  }
+
+  // Check for the check mark reaction in the help channel
+  if (
+    reactionEvent.reaction === "white_check_mark" &&
+    reactionEvent.item.channel === HELP_CHANNEL
+  ) {
+    // Get the ticket by its original timestamp
+    const ticket = getTicketByOriginalTs(reactionEvent.item.ts);
+    if (!ticket) return;
+
+    // Allow resolving if:
+    // 1. User is the original message author, OR
+    // 2. User is in the tickets channel
+    try {
+      // Get the original message to check the author
+      const messageInfo = await client.conversations.history({
+        channel: reactionEvent.item.channel,
+        latest: reactionEvent.item.ts,
+        limit: 1,
+        inclusive: true,
+      });
+
+      const isOriginalAuthor =
+        messageInfo.messages &&
+        messageInfo.messages[0] &&
+        messageInfo.messages[0].user === reactionEvent.user;
+
+      if (isOriginalAuthor || isTicketChannelMember(reactionEvent.user)) {
+        const success = await resolveTicket(
+          ticket.ticketMessageTs,
+          reactionEvent.user,
+          client,
+          logger
         );
-        return;
-    }
-
-    // Check for the check mark reaction in the help channel
-    if (
-        reactionEvent.reaction === "white_check_mark" &&
-        reactionEvent.item.channel === HELP_CHANNEL
-    ) {
-        // Get the ticket by its original timestamp
-        const ticket = getTicketByOriginalTs(reactionEvent.item.ts);
-        if (!ticket) return;
-
-        // Allow resolving if:
-        // 1. User is the original message author, OR
-        // 2. User is in the tickets channel
-        try {
-            // Get the original message to check the author
-            const messageInfo = await client.conversations.history({
-                channel: reactionEvent.item.channel,
-                latest: reactionEvent.item.ts,
-                limit: 1,
-                inclusive: true,
-            });
-
-            const isOriginalAuthor =
-                messageInfo.messages &&
-                messageInfo.messages[0] &&
-                messageInfo.messages[0].user === reactionEvent.user;
-
-            if (isOriginalAuthor || isTicketChannelMember(reactionEvent.user)) {
-                const success = await resolveTicket(
-                    ticket.ticketMessageTs,
-                    reactionEvent.user,
-                    client,
-                    logger
-                );
-                if (success) {
-                    logger.info(
-                        `Ticket resolved via reaction by ${reactionEvent.user} (${isOriginalAuthor ? "original author" : "support team member"
-                        })`
-                    );
-                    client.reactions.add({
-                        name: "white_check_mark",
-                        timestamp: reactionEvent.item.ts,
-                        channel: reactionEvent.item.channel,
-                    });
-                }
-            } else {
-                logger.info(
-                    `User ${reactionEvent.user} tried to resolve a ticket via reaction but is not authorized`
-                );
-            }
-        } catch (error) {
-            logger.error("Error checking message author:", error);
+        if (success) {
+          logger.info(
+            `Ticket resolved via reaction by ${reactionEvent.user} (${isOriginalAuthor ? "original author" : "support team member"
+            })`
+          );
+          client.reactions.add({
+            name: "white_check_mark",
+            timestamp: reactionEvent.item.ts,
+            channel: reactionEvent.item.channel,
+          });
         }
+      } else {
+        logger.info(
+          `User ${reactionEvent.user} tried to resolve a ticket via reaction but is not authorized`
+        );
+      }
+    } catch (error) {
+      logger.error("Error checking message author:", error);
     }
+  }
 });
 
 // Fetch AI response from the Hack Club AI service
-async function fetchAIResponse(userInput) {
+async function fetchAIResponse(userInput: string) {
   return "unused";
   try {
     const response = await fetch(AI_ENDPOINT, {
@@ -741,8 +741,7 @@ async function sendLB() {
       .sort((a, b) => b.count_of_tickets - a.count_of_tickets)
       .map(
         (e, i) =>
-          `${i + 1} - <@${e.slack_id}> resolved *${
-            e.count_of_tickets
+          `${i + 1} - <@${e.slack_id}> resolved *${e.count_of_tickets
           }* today!\n`
       )}`,
   });
@@ -752,20 +751,20 @@ async function sendLB() {
 
 // Start the app
 (async () => {
-    // Load ticket data from file before starting the app
-    await loadTicketData();
+  // Load ticket data from file before starting the app
+  await loadTicketData();
 
-    await app.start();
+  await app.start();
 
-    // Initialize the ticket channel members cache
-    const client = app.client;
-    await refreshTicketChannelMembers(client);
+  // Initialize the ticket channel members cache
+  const client = app.client;
+  await refreshTicketChannelMembers(client);
 
-    // Refresh the ticket channel members list every hour
-    setInterval(() => refreshTicketChannelMembers(client), 60 * 60 * 1000);
+  // Refresh the ticket channel members list every hour
+  setInterval(() => refreshTicketChannelMembers(client), 60 * 60 * 1000);
 
-    // Periodically save ticket data (every 5 minutes as a backup)
-    setInterval(saveTicketData, 5 * 60 * 1000);
+  // Periodically save ticket data (every 5 minutes as a backup)
+  setInterval(saveTicketData, 5 * 60 * 1000);
 
   // interval to send lb
   setInterval(sendLB, 24 * 60 * 60 * 1000);
